@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Produttori/Trasformatori/Distributori - AgriShop</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <!-- Dashboard Navigation -->
+    <nav class="dashboard-nav">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="nav-title">Dashboard Produttori</h1>
+                <span class="user-role" id="venditoreRole">Produttore/Trasformatore/Distributore</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1>Gestione Attività</h1>
+            <p>Gestisci prodotti, materie prime e pacchetti approvati e monitora le vendite.</p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-cards">
+            <!-- Card Materie Prime - Solo PRODUTTORE e DISTRIBUTORE -->
+            <div id="mp-card" class="dashboard-card secondary hidden">
+                <div class="card-icon">🌱</div>
+                <h3>Materie Prime</h3>
+                <p>Gestisci le tue materie prime agricole.</p>
+                <div class="quick-actions">
+                    <div class="actions-grid">
+                        <a href="#" onclick="toggleSection('mp-list')" class="action-btn">
+                            <span class="icon">👀</span>
+                            <span class="label">Vedi materie prime</span>
+                        </a>
+                        <a href="#" onclick="toggleSection('create-mp')" class="action-btn">
+                            <span class="icon">➕</span>
+                            <span class="label">Crea materia prima</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Prodotti Trasformati - Solo TRASFORMATORE e DISTRIBUTORE -->
+            <div id="prodotti-card" class="dashboard-card hidden">
+                <div class="card-icon">📦</div>
+                <h3>Prodotti Trasformati</h3>
+                <p>Gestisci i tuoi prodotti lavorati.</p>
+                <div class="quick-actions">
+                    <div class="actions-grid">
+                        <a href="#" onclick="toggleSection('prodotti-list')" class="action-btn">
+                            <span class="icon">👀</span>
+                            <span class="label">Vedi prodotti</span>
+                        </a>
+                        <a href="#" onclick="toggleSection('create-prodotto')" class="action-btn">
+                            <span class="icon">➕</span>
+                            <span class="label">Crea prodotto</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Pacchetti - Solo DISTRIBUTORE -->
+            <div id="pacchetti-card" class="dashboard-card accent hidden">
+                <div class="card-icon">📦</div>
+                <h3>Pacchetti</h3>
+                <p>Crea pacchetti composti da più prodotti.</p>
+                <div class="quick-actions">
+                    <div class="actions-grid">
+                        <a href="#" onclick="toggleSection('pacchetti-list')" class="action-btn">
+                            <span class="icon">👀</span>
+                            <span class="label">Vedi pacchetti</span>
+                        </a>
+                        <a href="#" onclick="toggleSection('create-pacchetto')" class="action-btn">
+                            <span class="icon">➕</span>
+                            <span class="label">Crea pacchetto</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Card Collegamenti - Solo TRASFORMATORE -->
+            <div id="collegamenti-card" class="dashboard-card secondary hidden">
+                <div class="card-icon">🔗</div>
+                <h3>Collegamenti</h3>
+                <p>Collega prodotti trasformati alle materie prime di origine.</p>
+                <div class="quick-actions">
+                    <div class="actions-grid">
+                        <a href="#" onclick="toggleSection('link-products')" class="action-btn">
+                            <span class="icon">🔗</span>
+                            <span class="label">Collega prodotti</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Card Ordini - Tutti -->
+            <div class="dashboard-card accent">
+                <div class="card-icon">📊</div>
+                <h3>Ordini</h3>
+                <p>Storico e stato degli ordini ricevuti.</p>
+                <button disabled class="btn-outline">Funzionalità in sviluppo</button>
+            </div>
+        </div>
+
+        <!-- Sezioni dinamiche -->
+        
+        <!-- Lista Prodotti -->
+        <div id="prodotti-list" class="card hidden">
+            <h3>📦 I Miei Prodotti</h3>
+            <div id="prodotti-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrizione</th>
+                            <th>Stato</th>
+                            <th>Materie Prime</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prodotti-table">
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Lista Materie Prime -->
+        <div id="mp-list" class="card hidden">
+            <h3>🌱 Le Mie Materie Prime</h3>
+            <div id="mp-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrizione</th>
+                            <th>Metodo Coltivazione</th>
+                            <th>Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody id="mp-table">
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Crea Prodotto Trasformato - TRASFORMATORE e DISTRIBUTORE -->
+        <div id="create-prodotto" class="card hidden">
+            <h3>➕ Crea Nuovo Prodotto Trasformato</h3>
+            <form id="createProdottoForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="pNome">Nome Prodotto</label>
+                        <input id="pNome" type="text" placeholder="Nome del prodotto trasformato" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pDesc">Descrizione</label>
+                        <input id="pDesc" type="text" placeholder="Descrizione del prodotto">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="pPrezzo">Prezzo (€)</label>
+                        <input id="pPrezzo" type="number" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pQuantita">Quantità Disponibile</label>
+                        <input id="pQuantita" type="number" placeholder="Quantità" required>
+                    </div>
+                </div>
+                
+                <!-- Sezione Processi di Trasformazione -->
+                <div class="form-group">
+                    <label for="processoTrasformazione">Processo di Trasformazione</label>
+                    <select id="processoTrasformazione">
+                        <option value="">Seleziona processo...</option>
+                        <option value="Fermentazione">Fermentazione</option>
+                        <option value="Coagulazione">Coagulazione</option>
+                        <option value="Molitura">Molitura</option>
+                        <option value="Macinazione">Macinazione</option>
+                        <option value="Maturazione">Maturazione</option>
+                    </select>
+                </div>
+
+                <!-- Certificazioni Prodotto -->
+                <div class="form-group">
+                    <label for="certProdotto">Certificazione Prodotto</label>
+                    <select id="certProdotto">
+                        <option value="">Seleziona certificazione...</option>
+                        <option value="DOP">DOP</option>
+                        <option value="IGP">IGP</option>
+                        <option value="GlobalG.A.P.">GlobalG.A.P.</option>
+                    </select>
+                </div>
+
+                <!-- Collegamento Materie Prime - Solo TRASFORMATORE -->
+                <div id="origine-mp-section" class="form-group hidden">
+                    <label for="origineMaterieSelect">Materie Prime Utilizzate</label>
+                    <select id="origineMaterieSelect" multiple>
+                        <option value="">Caricamento materie prime...</option>
+                    </select>
+                    <small class="text-muted">Seleziona le materie prime utilizzate per questo prodotto</small>
+                </div>
+
+                <button type="button" class="btn-primary" onclick="submitCreateProdotto()">Salva Prodotto</button>
+            </form>
+        </div>
+        
+        <!-- Crea Materia Prima - PRODUTTORE e DISTRIBUTORE -->
+        <div id="create-mp" class="card hidden">
+            <h3>🌱 Crea Nuova Materia Prima</h3>
+            <form id="createMPForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="mpNome">Nome Materia Prima</label>
+                        <input id="mpNome" type="text" placeholder="Nome materia prima" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mpDesc">Descrizione</label>
+                        <input id="mpDesc" type="text" placeholder="Descrizione">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="mpPrezzo">Prezzo (€)</label>
+                        <input id="mpPrezzo" type="number" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mpQuantita">Quantità Disponibile</label>
+                        <input id="mpQuantita" type="number" placeholder="Quantità" required>
+                    </div>
+                </div>
+                
+                <!-- Metodi di Coltivazione -->
+                <div class="form-group">
+                    <label for="metodoColtivazione">Metodo di Coltivazione</label>
+                    <select id="metodoColtivazione">
+                        <option value="">Seleziona metodo...</option>
+                        <option value="Biologica">Biologica</option>
+                        <option value="Integrata">Integrata</option>
+                        <option value="Conservativa">Conservativa</option>
+                        <option value="Biodinamica">Biodinamica</option>
+                    </select>
+                </div>
+
+                <!-- Certificazioni -->
+                <div class="form-group">
+                    <label for="certMateriaPrima">Certificazione</label>
+                    <select id="certMateriaPrima">
+                        <option value="">Seleziona certificazione...</option>
+                        <option value="DOP">DOP</option>
+                        <option value="IGP">IGP</option>
+                        <option value="GlobalG.A.P.">GlobalG.A.P.</option>
+                    </select>
+                </div>
+
+                <button type="button" class="btn-secondary" onclick="submitCreateMP()">Salva Materia Prima</button>
+            </form>
+        </div>
+        
+        <!-- Collega Prodotti -->
+        <div id="link-products" class="card hidden">
+            <h3>🔗 Collega Materie Prime ai Prodotti</h3>
+            <form id="linkForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="linkProdottoSelect">Seleziona Prodotto</label>
+                        <select id="linkProdottoSelect" required>
+                            <option value="">Caricamento prodotti...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="linkMateriaSelect">Seleziona Materia Prima</label>
+                        <select id="linkMateriaSelect" required>
+                            <option value="">Caricamento materie prime...</option>
+                        </select>
+                    </div>
+                </div>
+                <button type="button" class="btn-outline" onclick="submitLink()">Collega</button>
+            </form>
+        </div>
+
+        <!-- Lista Pacchetti - Solo DISTRIBUTORE -->
+        <div id="pacchetti-list" class="card hidden">
+            <h3>📦 I Miei Pacchetti</h3>
+            <div id="pacchetti-table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Descrizione</th>
+                            <th>N° Prodotti</th>
+                            <th>Stato</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pacchetti-table">
+                        <tr>
+                            <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Crea Pacchetto - Solo DISTRIBUTORE -->
+        <div id="create-pacchetto" class="card hidden">
+            <h3>📦 Crea Nuovo Pacchetto</h3>
+            <form id="createPacchettoForm">
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="pacNome">Nome Pacchetto</label>
+                        <input id="pacNome" type="text" placeholder="Nome del pacchetto" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pacDesc">Descrizione</label>
+                        <input id="pacDesc" type="text" placeholder="Descrizione del pacchetto">
+                    </div>
+                </div>
+                <div class="grid-2">
+                    <div class="form-group">
+                        <label for="pacPrezzo">Prezzo (€)</label>
+                        <input id="pacPrezzo" type="number" step="0.01" placeholder="0.00" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="pacQuantita">Quantità Disponibile</label>
+                        <input id="pacQuantita" type="number" placeholder="Quantità" required>
+                    </div>
+                </div>
+                
+                <!-- Selezione Prodotti per il Pacchetto -->
+                <div class="form-group">
+                    <label>Prodotti nel Pacchetto</label>
+                    <div id="prodotti-checklist" class="checkbox-list">
+                        <p class="text-muted">Caricamento prodotti disponibili...</p>
+                    </div>
+                </div>
+
+                <button type="button" class="btn-accent" onclick="submitCreatePacchetto()">Salva Pacchetto</button>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        let userProducts = [];
+        let userMaterials = [];
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.auth) {
+                auth.init();
+                const ok = auth.requireRoles(['ROLE_PRODUTTORE','ROLE_TRASFORMATORE','ROLE_DISTRIBUTORE_TIPICITA']);
+                if(!ok) return;
+            }
+            loadUserData();
+            updateRoleDisplay();
+            setupRoleBasedUI();
+        });
+
+        function updateRoleDisplay() {
+            const user = auth.getCurrentUser();
+            if (user && user.role) {
+                const norm = auth.normalizeRole ? auth.normalizeRole(user.role) : user.role;
+                const roleMapping = {
+                    'ROLE_PRODUTTORE': 'Produttore',
+                    'ROLE_TRASFORMATORE': 'Trasformatore', 
+                    'ROLE_DISTRIBUTORE_TIPICITA': 'Distributore'
+                };
+                const displayRole = roleMapping[norm] || 'Venditore';
+                document.getElementById('venditoreRole').textContent = displayRole;
+            }
+        }
+
+        function setupRoleBasedUI() {
+            const user = auth.getCurrentUser();
+            if (!user || !user.role) return;
+
+            // Nascondi tutte le card inizialmente
+            const allCards = ['mp-card', 'prodotti-card', 'pacchetti-card', 'collegamenti-card'];
+            allCards.forEach(cardId => {
+                const card = document.getElementById(cardId);
+                if (card) card.classList.add('hidden');
+            });
+
+            // Mostra card appropriate per ogni ruolo
+            const norm = auth.normalizeRole ? auth.normalizeRole(user.role) : user.role;
+            switch(norm) {
+                case 'ROLE_PRODUTTORE':
+                    showCard('mp-card');
+                    break;
+                case 'ROLE_TRASFORMATORE':
+                    showCard('prodotti-card');
+                    showCard('collegamenti-card');
+                    showElement('origine-mp-section');
+                    break;
+                case 'ROLE_DISTRIBUTORE_TIPICITA':
+                    showCard('mp-card');
+                    showCard('prodotti-card');
+                    showCard('pacchetti-card');
+                    break;
+            }
+        }
+
+        function showCard(cardId) {
+            const card = document.getElementById(cardId);
+            if (card) card.classList.remove('hidden');
+        }
+
+        function showElement(elementId) {
+            const element = document.getElementById(elementId);
+            if (element) element.classList.remove('hidden');
+        }
+
+        function loadUserData() {
+            // Carica prodotti dell'utente
+            loadUserProducts();
+            loadUserMaterials();
+            loadUserPackages();
+            
+            // Per i trasformatori, carica anche i produttori e le materie prime disponibili
+            const user = auth.getCurrentUser();
+            if (user.role === 'ROLE_TRASFORMATORE') {
+                loadProduttori();
+                loadMateriePrimeDisponibili();
+            }
+        }
+
+        function loadUserProducts() {
+            fetch('/api/prodotti', {
+                headers: auth.getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(data => {
+                userProducts = data.filter(p => p.aziendaOrigine && p.aziendaOrigine.id === auth.getCurrentUser().id);
+                updateProductsTable();
+                updateProductsSelect();
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento prodotti:', error);
+                ui.showNotification('Errore nel caricamento prodotti', 'error');
+            });
+        }
+
+        function loadUserMaterials() {
+            fetch('/api/materie-prime', {
+                headers: auth.getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(data => {
+                userMaterials = data.filter(mp => mp.aziendaOrigine && mp.aziendaOrigine.id === auth.getCurrentUser().id);
+                updateMaterialsTable();
+                updateMaterialsSelect();
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento materie prime:', error);
+                ui.showNotification('Errore nel caricamento materie prime', 'error');
+            });
+        }
+
+        function updateProductsTable() {
+            const tbody = document.getElementById('prodotti-table');
+            if (userProducts.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun prodotto trovato</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = userProducts.map(prodotto => `
+                <tr>
+                    <td><strong>${prodotto.nome}</strong></td>
+                    <td>${prodotto.descrizione || 'N/A'}</td>
+                    <td><span class="badge badge-success">Attivo</span></td>
+                    <td>${prodotto.materiePrime ? prodotto.materiePrime.map(mp => mp.nome).join(', ') : 'Nessuna'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function updateMaterialsTable() {
+            const tbody = document.getElementById('mp-table');
+            if (userMaterials.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessuna materia prima trovata</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = userMaterials.map(mp => `
+                <tr>
+                    <td><strong>${mp.nome}</strong></td>
+                    <td>${mp.descrizione || 'N/A'}</td>
+                    <td>${mp.metodoColtivazione || 'N/A'}</td>
+                    <td><span class="badge badge-success">Attiva</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function updateProductsSelect() {
+            const select = document.getElementById('linkProdottoSelect');
+            select.innerHTML = '<option value="">Seleziona un prodotto...</option>';
+            userProducts.forEach(prodotto => {
+                select.innerHTML += `<option value="${prodotto.id}">${prodotto.nome}</option>`;
+            });
+        }
+
+        function updateMaterialsSelect() {
+            const select = document.getElementById('linkMateriaSelect');
+            select.innerHTML = '<option value="">Seleziona una materia prima...</option>';
+            userMaterials.forEach(mp => {
+                select.innerHTML += `<option value="${mp.id}">${mp.nome}</option>`;
+            });
+        }
+
+        function loadProduttori() {
+            fetch('/api/venditori', {
+                headers: auth.getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Filtra solo i produttori (tipo PRODUTTORE)
+                const produttori = data.filter(v => v.username && v.ragioneSociale);
+                updateProduttoriSelect(produttori);
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento produttori:', error);
+                ui.showNotification('Errore nel caricamento produttori', 'error');
+            });
+        }
+
+        function loadMateriePrimeDisponibili() {
+            fetch('/api/materie-prime/public', {
+                headers: auth.getAuthHeaders()
+            })
+            .then(response => response.json())
+            .then(data => {
+                updateMateriePrimeSelect(data);
+            })
+            .catch(error => {
+                console.error('Errore nel caricamento materie prime:', error);
+                ui.showNotification('Errore nel caricamento materie prime disponibili', 'error');
+            });
+        }
+
+        function updateProduttoriSelect(produttori) {
+            const select = document.getElementById('origineMaterieSelect');
+            if (!select) return;
+            
+            select.innerHTML = '<option value="">Seleziona produttori...</option>';
+            produttori.forEach(produttore => {
+                select.innerHTML += `<option value="${produttore.id}">${produttore.ragioneSociale || produttore.username}</option>`;
+            });
+        }
+
+        function updateMateriePrimeSelect(materiePrime) {
+            const select = document.getElementById('origineMaterieSelect');
+            if (!select) return;
+            
+            // Modifica: invece di selezionare produttori, permettiamo di selezionare le materie prime direttamente
+            select.innerHTML = '<option value="">Seleziona materie prime...</option>';
+            materiePrime.forEach(mp => {
+                const nomeAzienda = mp.aziendaOrigine ? mp.aziendaOrigine.ragioneSociale || mp.aziendaOrigine.username : 'N/A';
+                select.innerHTML += `<option value="${mp.id}">${mp.nome} (${nomeAzienda})</option>`;
+            });
+        }
+
+        function toggleSection(sectionId) {
+            // Nascondi tutte le sezioni
+            const sections = [
+                'prodotti-list', 'mp-list', 'pacchetti-list',
+                'create-prodotto', 'create-mp', 'create-pacchetto', 
+                'link-products'
+            ];
+            sections.forEach(id => {
+                const section = document.getElementById(id);
+                if (section) {
+                    if (id === sectionId) {
+                        section.classList.toggle('hidden');
+                    } else {
+                        section.classList.add('hidden');
+                    }
+                }
+            });
+
+            // Se stiamo aprendo una sezione di creazione pacchetto, carica i prodotti disponibili
+            if (sectionId === 'create-pacchetto' && !document.getElementById(sectionId).classList.contains('hidden')) {
+                loadProdottiForPacchetto();
+            }
+        }
+
+        function submitCreateProdotto() {
+            const nome = document.getElementById('pNome').value;
+            const descrizione = document.getElementById('pDesc').value;
+            const prezzo = document.getElementById('pPrezzo').value;
+            const quantita = document.getElementById('pQuantita').value;
+            const processo = document.getElementById('processoTrasformazione').value;
+            const certificazione = document.getElementById('certProdotto').value;
+            
+            if (!nome.trim() || !prezzo || !quantita) {
+                ui.showNotification('Nome, prezzo e quantità sono obbligatori', 'error');
+                return;
+            }
+
+            const data = {
+                nome: nome.trim(),
+                descrizione: descrizione.trim(),
+                prezzo: parseFloat(prezzo),
+                quantita: parseInt(quantita),
+                processoTrasformazione: processo,
+                certificazioneProdotto: certificazione
+            };
+
+            // Solo per TRASFORMATORE: aggiungi materie prime selezionate
+            const user = auth.getCurrentUser();
+            if (user.role === 'ROLE_TRASFORMATORE') {
+                const origineSelect = document.getElementById('origineMaterieSelect');
+                const materiePrimeSelezionate = Array.from(origineSelect.selectedOptions).map(option => option.value);
+                data.materiePrimeIds = materiePrimeSelezionate;
+            }
+
+            http.post('/api/prodotti', data)
+                .then(response => {
+                    ui.showNotification('Prodotto creato con successo!', 'success');
+                    document.getElementById('createProdottoForm').reset();
+                    toggleSection('create-prodotto');
+                    loadUserProducts();
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    ui.showNotification('Errore nella creazione del prodotto', 'error');
+                });
+        }
+
+        function submitCreateMP() {
+            const nome = document.getElementById('mpNome').value;
+            const descrizione = document.getElementById('mpDesc').value;
+            const prezzo = document.getElementById('mpPrezzo').value;
+            const quantita = document.getElementById('mpQuantita').value;
+            const metodo = document.getElementById('metodoColtivazione').value;
+            const certificazione = document.getElementById('certMateriaPrima').value;
+            
+            if (!nome.trim() || !prezzo || !quantita) {
+                ui.showNotification('Nome, prezzo e quantità sono obbligatori', 'error');
+                return;
+            }
+
+            const data = {
+                nome: nome.trim(),
+                descrizione: descrizione.trim(),
+                prezzo: parseFloat(prezzo),
+                quantita: parseInt(quantita),
+                metodoColtivazione: metodo,
+                certificazioneMP: certificazione
+            };
+
+            http.post('/api/materie-prime', data)
+                .then(response => {
+                    ui.showNotification('Materia prima creata con successo!', 'success');
+                    document.getElementById('createMPForm').reset();
+                    toggleSection('create-mp');
+                    loadUserMaterials();
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    ui.showNotification('Errore nella creazione della materia prima', 'error');
+                });
+        }
+
+        function submitLink() {
+            const prodottoId = document.getElementById('linkProdottoSelect').value;
+            const materiaId = document.getElementById('linkMateriaSelect').value;
+            
+            if (!prodottoId || !materiaId) {
+                ui.showNotification('Seleziona sia il prodotto che la materia prima', 'error');
+                return;
+            }
+
+            const url = `/api/materie-prime/link?prodottoId=${encodeURIComponent(prodottoId)}&materiaPrimaId=${encodeURIComponent(materiaId)}`;
+            
+            fetch(url, {
+                method: 'POST',
+                headers: auth.getAuthHeaders()
+            })
+            .then(response => {
+                if (response.ok) {
+                    ui.showNotification('Collegamento creato con successo!', 'success');
+                    document.getElementById('linkForm').reset();
+                    loadUserProducts();
+                } else {
+                    throw new Error('Errore nel collegamento');
+                }
+            })
+            .catch(error => {
+                console.error('Errore:', error);
+                ui.showNotification('Errore nel collegamento', 'error');
+            });
+        }
+
+        function loadProdottiForPacchetto() {
+            const checklistContainer = document.getElementById('prodotti-checklist');
+            if (userProducts.length === 0) {
+                checklistContainer.innerHTML = '<p class="text-muted">Devi avere almeno 2 prodotti per creare un pacchetto</p>';
+                return;
+            }
+
+            checklistContainer.innerHTML = userProducts.map(prodotto => `
+                <label class="checkbox-item">
+                    <input type="checkbox" value="${prodotto.id}" name="prodotti-pacchetto">
+                    <span>${prodotto.nome} - €${prodotto.prezzo || 'N/A'}</span>
+                </label>
+            `).join('');
+        }
+
+        function submitCreatePacchetto() {
+            const nome = document.getElementById('pacNome').value;
+            const descrizione = document.getElementById('pacDesc').value;
+            const prezzo = document.getElementById('pacPrezzo').value;
+            const quantita = document.getElementById('pacQuantita').value;
+            
+            const prodottiSelezionati = Array.from(document.querySelectorAll('input[name="prodotti-pacchetto"]:checked'))
+                .map(checkbox => checkbox.value);
+            
+            if (!nome.trim() || !prezzo || !quantita) {
+                ui.showNotification('Nome, prezzo e quantità sono obbligatori', 'error');
+                return;
+            }
+
+            if (prodottiSelezionati.length < 2) {
+                ui.showNotification('Seleziona almeno 2 prodotti per il pacchetto', 'error');
+                return;
+            }
+
+            const data = {
+                nome: nome.trim(),
+                descrizione: descrizione.trim(),
+                prezzo: parseFloat(prezzo),
+                quantita: parseInt(quantita),
+                prodottiIds: prodottiSelezionati
+            };
+
+            http.post('/api/pacchetti', data)
+                .then(response => {
+                    ui.showNotification('Pacchetto creato con successo!', 'success');
+                    document.getElementById('createPacchettoForm').reset();
+                    toggleSection('create-pacchetto');
+                    loadUserPackages();
+                })
+                .catch(error => {
+                    console.error('Errore:', error);
+                    ui.showNotification('Errore nella creazione del pacchetto', 'error');
+                });
+        }
+
+        function loadUserPackages() {
+            const tbody = document.getElementById('pacchetti-table');
+            fetch('/api/miei-pacchetti', { headers: auth.getAuthHeaders() })
+                .then(r => r.json())
+                .then(items => {
+                    const myId = auth.getCurrentUser().id;
+                    const miei = Array.isArray(items) ? items.filter(p => p.aziendaOrigine && p.aziendaOrigine.id === myId) : [];
+                    if (miei.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">Nessun pacchetto trovato</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = miei.map(p => `
+                        <tr>
+                            <td><strong>${p.nome}</strong></td>
+                            <td>${p.descrizione || 'N/A'}</td>
+                            <td>${Array.isArray(p.prodotti) ? p.prodotti.length : (p.prodottiCount || '-')}</td>
+                            <td>${p.approvato ? '<span class="badge badge-success">Approvato</span>' : '<span class="badge badge-warning">In revisione</span>'}</td>
+                        </tr>
+                    `).join('');
+                })
+                .catch(e => {
+                    console.error('Errore caricamento pacchetti:', e);
+                    tbody.innerHTML = '<tr><td colspan="4" class="text-center message-error">Errore nel caricamento</td></tr>';
+                });
+        }
+    </script>
+
+</body>
+</html>

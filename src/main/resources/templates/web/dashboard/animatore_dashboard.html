@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Animatore - AgriShop</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <!-- Dashboard Navigation -->
+    <nav class="dashboard-nav">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="nav-title">Dashboard Animatore</h1>
+                <span class="user-role">Animatore</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1>Gestione filiere</h1>
+            <p>Coordina iniziative e stakeholder della filiera.</p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-cards">
+            <div class="dashboard-card">
+                <div class="card-icon">📅</div>
+                <h3>Eventi</h3>
+                <p>Crea e promuovi eventi di filiera.</p>
+                <a href="/eventi" class="btn-secondary">Vedi eventi</a>
+            </div>
+
+            <div class="dashboard-card">
+                <div class="card-icon">➕</div>
+                <h3>Crea evento</h3>
+                <p>Inserisci i dettagli e scegli il tipo.</p>
+                <form id="create-evento-form" onsubmit="return createEvento(event)">
+                    <div class="form-group">
+                        <label for="ev-nome">Nome</label>
+                        <input id="ev-nome" name="nome" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="ev-data">Data e ora</label>
+                        <input id="ev-data" name="data" type="datetime-local" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="ev-luogo">Luogo</label>
+                        <input id="ev-luogo" name="luogo" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="ev-descr">Descrizione</label>
+                        <textarea id="ev-descr" name="descrizione" rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="ev-tipo">Tipo</label>
+                        <select id="ev-tipo" name="tipo" required onchange="toggleHostVisita()">
+                            <option value="FIERA">Fiera</option>
+                            <option value="VISITA">Visita guidata</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="host-visita-group" style="display:none">
+                        <label for="ev-host">Host (per visita)</label>
+                        <input id="ev-host" name="hostVisita" />
+                    </div>
+                    <button class="btn-primary" type="submit">Crea</button>
+                </form>
+            </div>
+            
+            <div class="dashboard-card secondary">
+                <div class="card-icon">👥</div>
+                <h3>Stakeholder</h3>
+                <p>Collega produttori, trasformatori, curatori.</p>
+                <button disabled class="btn-outline">In arrivo</button>
+            </div>
+        </div>
+
+                <div class="card mt-2">
+                        <h3>I miei eventi</h3>
+                        <table id="my-events-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Data</th>
+                                    <th>Luogo</th>
+                                    <th>Approvato</th>
+                                    <th>Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="6" class="text-center text-muted">Caricamento...</td></tr>
+                            </tbody>
+                        </table>
+                </div>
+    </main>
+
+    <script>
+      function logout(){
+        if (window.auth && typeof window.auth.logout === 'function') {
+          window.auth.logout();
+        } else {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          window.location.replace('/login');
+        }
+      }
+
+            function toggleHostVisita(){
+                const sel = document.getElementById('ev-tipo');
+                const grp = document.getElementById('host-visita-group');
+                grp.style.display = (sel && sel.value === 'VISITA') ? 'block' : 'none';
+            }
+
+            async function createEvento(e){
+                e.preventDefault();
+                const nome = document.getElementById('ev-nome').value.trim();
+                const luogo = document.getElementById('ev-luogo').value.trim();
+                const descr = document.getElementById('ev-descr').value.trim();
+                const tipo = document.getElementById('ev-tipo').value;
+                const host = document.getElementById('ev-host').value.trim();
+                const dataStr = document.getElementById('ev-data').value; // yyyy-MM-ddTHH:mm
+                if(!nome || !luogo || !dataStr || !tipo){
+                    ui.showMessage('Compila tutti i campi obbligatori', 'error');
+                    return false;
+                }
+                const payload = { nome, luogo, descrizione: descr, tipo };
+                if(tipo === 'VISITA' && host){ payload.hostVisita = host; }
+                payload.data = dataStr;
+
+                try{
+                    const res = await fetch('/api/eventi', {
+                        method: 'POST',
+                        headers: auth.getAuthHeaders(),
+                        body: JSON.stringify(payload)
+                    });
+                    if(!res.ok){
+                        const t = await res.text();
+                        throw new Error(t || 'Errore creazione evento');
+                    }
+                    ui.showMessage('Evento creato con successo', 'success');
+                    (document.getElementById('create-evento-form')||{}).reset?.();
+                    toggleHostVisita();
+                }catch(err){
+                    console.error(err);
+                    ui.showMessage('Errore: ' + (err.message||'creazione evento'), 'error');
+                }
+                return false;
+            }
+
+                    async function loadMyEvents(){
+                        try{
+                            const res = await fetch('/api/eventi/me', { headers: auth.getAuthHeaders() });
+                            if(!res.ok) throw new Error('Errore caricamento eventi');
+                            const data = await res.json();
+                            const tbody = document.querySelector('#my-events-table tbody');
+                            tbody.innerHTML = '';
+                            if(!data.length){
+                                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nessun evento creato</td></tr>';
+                                return;
+                            }
+                            data.forEach(e => {
+                                const tr = document.createElement('tr');
+                                tr.innerHTML = `
+                                    <td>${e.id}</td>
+                                    <td>${e.nome}</td>
+                                    <td>${e.data || ''}</td>
+                                    <td>${e.luogo || ''}</td>
+                                    <td>${e.approvato ? '✔️' : '⏳'}</td>
+                                    <td>
+                                        <button class="btn-outline" onclick="deleteEvent(${e.id})">Elimina</button>
+                                    </td>`;
+                                tbody.appendChild(tr);
+                            });
+                        }catch(err){
+                            console.error(err);
+                            ui.showMessage('Errore nel caricamento dei tuoi eventi','error');
+                        }
+                    }
+
+                    async function deleteEvent(id){
+                        if(!confirm('Confermi la cancellazione dell\'evento?')) return;
+                        try{
+                            const res = await fetch(`/api/eventi/${id}/delete`, { method: 'POST', headers: auth.getAuthHeaders() });
+                            if(!res.ok) throw new Error('Eliminazione fallita');
+                            ui.showMessage('Evento eliminato','success');
+                            loadMyEvents();
+                        }catch(err){
+                            ui.showMessage('Errore eliminazione evento','error');
+                        }
+                    }
+
+                    document.addEventListener('DOMContentLoaded', function(){
+                        if(window.auth){ auth.init(); auth.requireRoles(['ROLE_ANIMATORE_FILIERA','ROLE_ANIMATORE']); }
+                        toggleHostVisita();
+                        loadMyEvents();
+                    });
+    </script>
+
+</body>
+</html>

@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Acquirente - AgriShop</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <!-- Dashboard Navigation -->
+    <nav class="dashboard-nav">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="nav-title">Dashboard Acquirente</h1>
+                <span class="user-role">Acquirente</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <!-- Dashboard Header -->
+        <div class="dashboard-header">
+            <h1>Ciao!</h1>
+            <p>Qui puoi consultare prodotti, ordini e preferiti.</p>
+        </div>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-cards">
+            <div class="dashboard-card accent">
+                <div class="card-icon">📅</div>
+                <h3>Eventi</h3>
+                <p>Partecipa agli eventi della filiera e alla comunità.</p>
+                <a role="button" class="btn-outline" href="/eventi">Vedi eventi</a>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <h3>I miei eventi prenotati</h3>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Nome</th>
+                            <th>Luogo</th>
+                            <th>Data</th>
+                            <th>Azioni</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tbody-miei-eventi">
+                        <tr><td colspan="4" class="text-muted">Caricamento...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+<script>
+function logout(){
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+    window.location.replace('/login');
+}
+
+async function caricaMiePrenotazioni(){
+    const tbody = document.getElementById('tbody-miei-eventi');
+    try {
+        const eventi = await http.get('/api/eventi/me/prenotazioni');
+        if (!eventi || eventi.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="text-muted">Nessuna prenotazione</td></tr>';
+            return;
+        }
+        tbody.innerHTML = '';
+        eventi.forEach(e => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><a href="/evento/${e.id}"><strong>${e.nome}</strong></a></td>
+                <td>${e.luogo ?? ''}</td>
+                <td>${e.data ? new Date(e.data).toLocaleString() : ''}</td>
+                <td><button class="btn btn-outline btn-sm" data-id="${e.id}">Annulla</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+        tbody.querySelectorAll('button[data-id]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const id = btn.getAttribute('data-id');
+                try {
+                    const res = await http.post(`/api/eventi/${id}/annulla`, {});
+                    ui.showNotification(res?.message || 'Prenotazione annullata', 'success');
+                    caricaMiePrenotazioni();
+                } catch (e) {
+                    ui.showNotification(e.message || 'Errore nell\'annullamento', 'error');
+                }
+            });
+        });
+    } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="4" class="text-error">Errore nel caricamento</td></tr>';
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(window.auth){
+        auth.init();
+        const ok = auth.requireRoles(['ROLE_ACQUIRENTE']);
+        if (!ok) return;
+    }
+    caricaMiePrenotazioni();
+});
+</script>
+
+</body>
+</html>

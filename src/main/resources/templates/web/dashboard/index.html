@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dashboard - AgriShop</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <!-- La navigazione verrà generata automaticamente da navigation.js -->
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="dashboard-header">
+      <h1>Reindirizzamento in corso…</h1>
+      <p>Stiamo aprendo la tua dashboard personalizzata.</p>
+    </div>
+    <div class="text-center">
+      <a href="/" role="button" class="btn-secondary">Torna alla home</a>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      if (window.auth) {
+        auth.init();
+      }
+      
+      // Reindirizza alla dashboard appropriata
+      (function(){
+        if(window.auth){
+          auth.init();
+          const u = auth.requireAuth();
+          if(!u) return;
+          auth.gotoDashboardByRole();
+        }
+      })();
+    });
+  </script>
+</body>
+</html>
