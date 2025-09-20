@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Login - AgriShop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="grid-2 login-container">
+            <div class="card">
+                <header>
+                    <h1>Accedi</h1>
+                    <p class="text-muted">Entra nel tuo account</p>
+                </header>
+                
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="button" onclick="handleLogin(event)" class="btn-primary login-btn">
+                        Accedi
+                    </button>
+                </form>
+                
+                <div id="message" class="mt-2"></div>
+                
+                <div class="text-center mt-3">
+                    <p class="text-muted">Non hai un account? <a href="/register">Registrati qui</a></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+        <script>
+            // Auto-redirect se già autenticato
+            document.addEventListener('DOMContentLoaded', function(){
+                if (window.auth && auth.isLogged()) {
+                    auth.gotoDashboardByRole();
+                }
+            });
+
+            async function handleLogin(event) {
+                event.preventDefault();
+                const username = document.getElementById('username').value.trim();
+                const password = document.getElementById('password').value;
+                if (!username || !password) {
+                    ui.showMessage('Inserisci username e password', 'error');
+                    return;
+                }
+                ui.showMessage('Accesso in corso...', 'info');
+                try {
+                    const payload = { username, password };
+                    const res = await http.post('/api/auth/signin', payload, { headers: { 'Content-Type': 'application/json' } });
+                    if (res && res.accessToken) {
+                        auth.saveAuthData(res.accessToken, res);
+                        ui.showMessage('Accesso effettuato! Reindirizzamento...', 'success');
+                        setTimeout(() => auth.gotoDashboardByRole(), 250);
+                    } else {
+                        ui.showMessage('Risposta inattesa dal server', 'error');
+                    }
+                } catch (e) {
+                    const msg = (e && e.message && e.message.includes('401')) ? 'Credenziali non valide' : e.message || 'Errore di accesso';
+                    ui.showMessage(msg, 'error');
+                }
+            }
+        </script>
+            
+        </div>
+    </article>
+</main>
+</body>
+</html>

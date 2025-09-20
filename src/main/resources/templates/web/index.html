@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <title>AgriShop - Articoli Locali e Filiera Corta</title>
+    <link rel="stylesheet" href="/css/app.css"/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <main class="container">
+    <form method="get" action="/" class="searchbar">
+            <input type="search" name="q" placeholder="Cerca articolo (es. formaggio, miele, olio)" value="" th:value="${q}" />
+            <button type="submit" class="contrast">Cerca</button>
+            <a href="/" role="button" class="secondary outline">Pulisci</a>
+        </form>
+
+        <!-- Mappa Italia (OSM) -->
+        <div id="map"></div>
+
+        <!-- Lista articoli -->
+        <section class="mt-4">
+            <h2>Articoli</h2>
+            <div class="grid-cards">
+                <article class="card card-linkable" th:each="a : ${articoli}">
+                    <a class="stretched-link-block no-decor" th:href="@{'/articolo/' + ${a.tipoSlug} + '/' + ${a.id}}">
+                        <header>
+                            <h3 th:text="${a.nome}">Nome</h3>
+                        </header>
+                        <p th:text="${a.descrizione}">Descrizione</p>
+                        <footer>
+                            <small th:text="${a.aziendaOrigine != null ? a.aziendaOrigine.ragioneSociale : '—'}">Azienda</small>
+                        </footer>
+                    </a>
+                </article>
+            </div>
+        </section>
+    </main>
+
+    <script>
+    document.addEventListener('DOMContentLoaded', function(){
+            // Inizializza auth e aggiorna UI
+            if (window.auth) {
+                auth.init();
+            }
+            
+            // Init mappa al centro dell'Italia
+                        const map = L.map('map').setView([41.8719, 12.5674], 5);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(map);
+
+                        // carica aziende e disegna marker
+                        fetch('/api/aziende/public')
+                            .then(r => r.ok ? r.json() : [])
+                            .then(aziende => {
+                                (aziende || []).forEach(a => {
+                                    if(a.lat != null && a.lon != null){
+                                        L.marker([a.lat, a.lon]).addTo(map).bindPopup(`
+                                            <strong>${a.ragioneSociale || a.username || 'Azienda'}</strong><br/>
+                                            ${a.indirizzo || ''}
+                                        `);
+                                    }
+                                });
+                            })
+                            .catch(() => {});
+        });
+    </script>
+</body>
+</html>

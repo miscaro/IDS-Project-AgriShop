@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Aziende - AgriShop</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <!-- La navigazione verrà generata automaticamente da navigation.js -->
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="dashboard-header">
+      <h1>Aziende della Filiera</h1>
+      <p>Scopri le aziende partner di AgriShop</p>
+    </div>
+
+    <div class="card mb-4" th:if="${aziendaForm} != null">
+      <h3>➕ Registra Nuova Azienda</h3>
+      <form method="post" th:object="${aziendaForm}">
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="nome">Nome Azienda</label>
+            <input id="nome" type="text" th:field="*{nome}" placeholder="Nome azienda" required />
+          </div>
+          <div class="form-group">
+            <label for="indirizzo">Indirizzo</label>
+            <input id="indirizzo" type="text" th:field="*{indirizzo}" placeholder="Via, Città" />
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label for="lat">Latitudine</label>
+            <input id="lat" type="number" step="0.000001" th:field="*{lat}" placeholder="es. 41.8719" />
+          </div>
+          <div class="form-group">
+            <label for="lon">Longitudine</label>
+            <input id="lon" type="number" step="0.000001" th:field="*{lon}" placeholder="es. 12.5674" />
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">Registra Azienda</button>
+      </form>
+    </div>
+
+    <!-- Elenco Aziende -->
+    <div class="card">
+      <h3>🏢 Elenco Aziende</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Indirizzo</th>
+              <th>Posizione</th>
+              <th>Stato</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="a : ${aziende}">
+              <td>
+                <a th:href="@{'/azienda/' + ${a.id}}" class="link">
+                  <strong th:text="${a.ragioneSociale != null ? a.ragioneSociale : (a.username != null ? a.username : a.nome)}">Nome azienda</strong>
+                </a>
+              </td>
+              <td th:text="${a.indirizzo ?: 'Non specificato'}">Indirizzo</td>
+              <td>
+                <span th:if="${a.lat != null and a.lon != null}" 
+                      th:text="${#numbers.formatDecimal(a.lat, 1, 4)} + ', ' + ${#numbers.formatDecimal(a.lon, 1, 4)}">
+                  Coordinate
+                </span>
+                <span th:unless="${a.lat != null and a.lon != null}" class="text-muted">
+                  Non specificata
+                </span>
+              </td>
+              <td>
+                <span class="badge badge-secondary">Attiva</span>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(aziende)}">
+              <td colspan="4" class="text-center text-muted">Nessuna azienda registrata</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Inizializza auth e aggiorna UI
+      if (window.auth) {
+        auth.init();
+      }
+    });
+  </script>
+</body>
+</html>

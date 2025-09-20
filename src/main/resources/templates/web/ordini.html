@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>I miei ordini</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar"><div class="container"></div></nav>
+  <main class="container">
+    <div class="breadcrumb"><a href="/">← Home</a></div>
+    <h1>I miei ordini</h1>
+    <div id="orders" class="card"></div>
+  </main>
+  <script>
+  const state = { acquirenteId: null, ordini: [] };
+  function renderOrdini(){
+    const el = document.getElementById('orders');
+    if(!state.ordini.length){ el.innerHTML = '<p class="text-muted">Nessun ordine ancora.</p>'; return; }
+    el.innerHTML = state.ordini.map(o=>{
+      const items = (o.elementi||[]).map(e=>`${e.articolo.nome} x ${e.quantita}`).join(', ');
+      return `<div style="border-bottom:1px solid #eee;padding:8px 0;">
+        <div><strong>Ordine #${o.id}</strong> del ${o.data} - Totale: € ${Number(o.totale||0).toFixed(2)}</div>
+        <div class="text-muted">${items}</div>
+        <div class="text-muted">Spedizione: ${o.indirizzoSpedizione||''}</div>
+      </div>`;
+    }).join('');
+  }
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const u = auth.ensure(['ROLE_ACQUIRENTE']); if(!u) return;
+    state.acquirenteId = u.user.id;
+    http.get(`/api/ordini/${state.acquirenteId}`).then(list=>{ state.ordini=list||[]; renderOrdini(); });
+  });
+  </script>
+</body>
+</html>

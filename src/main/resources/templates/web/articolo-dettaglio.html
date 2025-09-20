@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${articolo.nome}">Articolo</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar"><div class="container"></div></nav>
+  <main class="container">
+    <div class="breadcrumb"><a href="/articoli">← Torna agli articoli</a></div>
+    <div class="card">
+      <h1 th:text="${articolo.nome}">Nome</h1>
+      <p class="text-muted" th:text="${articolo.descrizione}">Descrizione</p>
+      <div class="grid-2">
+        <div><strong>Azienda:</strong> <span th:text="${articolo.aziendaOrigine != null ? articolo.aziendaOrigine.ragioneSociale : 'Non specificata'}"></span></div>
+  <div><strong>Tipo:</strong> <span th:text="${articolo.tipo}"></span></div>
+        <div><strong>Prezzo:</strong> <span th:text="${articolo.prezzo != null ? #numbers.formatDecimal(articolo.prezzo,1,2) : '—'}"></span></div>
+        <div><strong>Quantità:</strong> <span th:text="${articolo.quantita}"></span></div>
+      </div>
+      <div class="mt-2">
+        <label>Quantità <input id="qty" type="number" min="1" value="1" style="width:80px"></label>
+        <button id="addToCart" class="btn-primary">Aggiungi al Carrello</button>
+        <a href="/carrello" class="btn-outline">Vai al carrello</a>
+      </div>
+    </div>
+
+    <!-- Sezione prodotto -->
+    <div class="card" th:if="${isProdotto}">
+      <h3>Dettagli Prodotto</h3>
+      <div class="grid-2">
+        <div><strong>Origine:</strong> <span th:text="${articolo.origineProdotto}">Origine</span></div>
+        <div><strong>Certificazione:</strong> <span th:text="${articolo.certificazioneProdotto ?: 'N/A'}">Cert</span></div>
+        <div><strong>Processo:</strong> <span th:text="${articolo.processoTrasformazione ?: 'N/A'}">Processo</span></div>
+      </div>
+      <h4 class="mt-3">Materie Prime Utilizzate</h4>
+      <ul>
+        <li th:each="mp : ${materiePrime}">
+          <a th:href="@{'/articolo/materia-prima/' + ${mp.id}}" th:text="${mp.nome}">Materia Prima</a>
+        </li>
+        <li th:if="${#lists.isEmpty(materiePrime)}" class="text-muted">Nessuna associata</li>
+      </ul>
+    </div>
+
+    <!-- Sezione materia prima -->
+    <div class="card" th:if="${isMateriaPrima}">
+      <h3>Dettagli Materia Prima</h3>
+      <div class="grid-2">
+        <div><strong>Metodo Coltivazione:</strong> <span th:text="${articolo.metodoColtivazione ?: 'N/A'}"></span></div>
+        <div><strong>Certificazione:</strong> <span th:text="${articolo.certificazioneMP ?: 'N/A'}"></span></div>
+      </div>
+      <h4 class="mt-3">Prodotti Derivati</h4>
+      <ul>
+        <li th:each="p : ${prodottiAssociati}">
+          <a th:href="@{'/articolo/prodotto/' + ${p.id}}" th:text="${p.nome}">Prodotto</a>
+        </li>
+        <li th:if="${#lists.isEmpty(prodottiAssociati)}" class="text-muted">Nessuno</li>
+      </ul>
+    </div>
+
+    <!-- Sezione pacchetto -->
+    <div class="card" th:if="${isPacchetto}">
+      <h3>Dettagli Pacchetto</h3>
+      <p>Elenco dei prodotti inclusi nel pacchetto:</p>
+      <ul>
+        <li th:each="p : ${prodottiPacchetto}">
+          <a th:href="@{'/articolo/prodotto/' + ${p.id}}" th:text="${p.nome}">Prodotto</a>
+        </li>
+        <li th:if="${#lists.isEmpty(prodottiPacchetto)}" class="text-muted">Nessun prodotto nel pacchetto</li>
+      </ul>
+    </div>
+  </main>
+  <script th:inline="javascript">
+  document.addEventListener('DOMContentLoaded', function(){
+    if(window.auth){auth.init();}
+    const btn = document.getElementById('addToCart');
+    if(btn){
+      btn.addEventListener('click', function(){
+        const user = auth.ensure(['ROLE_ACQUIRENTE']);
+        if(!user) return;
+        const acquirenteId = user.user.id;
+  const articoloId = /*[[${articolo.id}]]*/ 0;
+        const quantita = Math.max(1, parseInt(document.getElementById('qty').value||'1',10));
+        http.post(`/api/carrello/${acquirenteId}/articoli`, { articoloId: Number(articoloId), quantita })
+          .then(()=>{ ui.showMessage('Articolo aggiunto al carrello', 'success'); })
+          .catch(()=>{ ui.showMessage('Errore durante l\'aggiunta al carrello', 'error'); });
+      });
+    }
+  });
+  </script>
+</body>
+</html>

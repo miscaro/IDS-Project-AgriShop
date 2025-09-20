@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Eventi - AgriShop</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+          integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+          crossorigin=""></script>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar">
+    <div class="container">
+      <!-- La navigazione verrà generata automaticamente da navigation.js -->
+    </div>
+  </nav>
+
+  <main class="container">
+    <div class="dashboard-header">
+      <h1>Eventi della Filiera</h1>
+      <p>Scopri gli eventi locali e partecipa alla comunità della filiera corta</p>
+    </div>
+
+    <!-- Mappa eventi -->
+    <div class="card mb-4">
+      <h3>📍 Mappa Eventi</h3>
+      <div id="map"></div>
+    </div>
+
+    <!-- Elenco eventi -->
+    <div class="card">
+      <h3>📅 Lista Eventi</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Nome</th>
+            <th>Luogo</th>
+            <th>Data</th>
+            <th>Stato</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr th:each="e : ${eventi}">
+            <td>
+              <a th:href="@{'/evento/' + ${e.id}}">
+                <strong th:text="${e.nome}">Nome evento</strong>
+              </a>
+              <br>
+              <small class="text-muted" th:text="${e.descrizione}">Descrizione</small>
+            </td>
+            <td th:text="${e.luogo}">Luogo</td>
+            <td th:text="${#temporals.format(e.data, 'dd/MM/yyyy HH:mm')}">Data</td>
+            <td>
+              <span th:if="${e.approvato}" class="badge badge-secondary">Approvato</span>
+              <span th:unless="${e.approvato}" class="badge badge-accent">In attesa</span>
+            </td>
+          </tr>
+          <tr th:if="${#lists.isEmpty(eventi)}">
+            <td colspan="4" class="text-center text-muted">Nessun evento disponibile</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <script th:inline="javascript">
+    /*<![CDATA[*/
+    const eventi = /*[[${eventi}]]*/ [];
+    /*]]>*/
+
+    const map = L.map('map').setView([41.9027835, 12.4963655], 5); // Centered on Italy
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+
+    eventi.forEach(evento => {
+      if (evento.lat && evento.lon) {
+        L.marker([evento.lat, evento.lon]).addTo(map)
+                .bindPopup('<b>' + evento.nome + '</b><br>' + evento.luogo);
+      }
+    });
+  </script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){
+      // Inizializza auth e aggiorna UI
+      if (window.auth) {
+        auth.init();
+      }
+    });
+  </script>
+</body>
+</html>
