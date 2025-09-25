@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Articoli - AgriShop</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar"><div class="container"></div></nav>
+  <main class="container">
+    <div class="dashboard-header">
+      <h1>Catalogo Articoli</h1>
+      <p>Elenco completo di prodotti, materie prime e pacchetti approvati</p>
+    </div>
+    <div class="card">
+      <h3>📦 Articoli Disponibili</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Descrizione</th>
+              <th>Azienda</th>
+              <th>Tipo</th>
+              <th>Azioni</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:each="a : ${articoli}">
+              <td><strong th:text="${a.nome}">Nome articolo</strong></td>
+              <td th:text="${a.descrizione ?: 'N/A'}">Descrizione</td>
+              <td th:text="${a.aziendaOrigine != null ? a.aziendaOrigine.ragioneSociale : 'Non specificata'}">Azienda</td>
+              <td th:text="${#strings.capitalize(a.tipo)}">Tipo</td>
+              <td>
+                <a th:href="@{'/articolo/' + ${a.tipoSlug} + '/' + ${a.id}}" class="btn-outline btn-sm">👁️ Dettagli</a>
+              </td>
+            </tr>
+            <tr th:if="${#lists.isEmpty(articoli)}">
+              <td colspan="5" class="text-center text-muted">Nessun articolo disponibile</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', function(){ if(window.auth){auth.init();} });
+  </script>
+</body>
+</html>

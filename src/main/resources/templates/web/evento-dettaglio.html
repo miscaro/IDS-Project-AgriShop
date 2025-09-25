@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title th:text="${evento.nome} + ' - Evento'">Evento</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container"></div>
+</nav>
+<main class="container">
+  <div class="card">
+    <h1 th:text="${evento.nome}">Titolo evento</h1>
+    <p class="text-muted" th:text="${#temporals.format(evento.data, 'dd/MM/yyyy HH:mm')}">Data</p>
+    <p><strong>Luogo:</strong> <span th:text="${evento.luogo}">Luogo</span></p>
+    <p th:text="${evento.descrizione}">Descrizione evento</p>
+    <div id="message" class="hidden"></div>
+    <div class="actions">
+      <button id="btnPrenota" class="btn btn-primary">Prenota partecipazione</button>
+    </div>
+  </div>
+</main>
+<script th:inline="javascript">
+/*<![CDATA[*/
+  const eventoId = /*[[${evento.id}]]*/ 0;
+/*]]>*/
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window.auth) auth.init();
+    const btn = document.getElementById('btnPrenota');
+    // Mostra bottone solo a utenti autenticati con ruolo ACQUIRENTE
+    const user = auth.getCurrentUser();
+    const isBuyer = user && auth.normalizeRole(user.role) === 'ROLE_ACQUIRENTE';
+    if (!isBuyer) {
+      btn.classList.add('hidden');
+    }
+    btn.addEventListener('click', async () => {
+      const user = auth.getCurrentUser();
+      if (!user) { window.location.replace('/login'); return; }
+      try {
+        const res = await http.post(`/api/eventi/${eventoId}/prenota`, {});
+        const msg = res?.message || res?.raw || 'Prenotazione registrata';
+        ui.showNotification(msg, 'success');
+        btn.setAttribute('disabled', 'true');
+      } catch (e) {
+        ui.showNotification('Impossibile prenotare: ' + (e.message || 'Errore'), 'error');
+      }
+    });
+  });
+</script>
+</body>
+</html>

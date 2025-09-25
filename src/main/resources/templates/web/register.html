@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Registrazione - AgriShop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="grid-2 login-container">
+            <div class="card">
+                <header>
+                    <h1>Registrazione</h1>
+                    <p class="text-muted">Crea il tuo account sulla piattaforma</p>
+                </header>
+                
+                <form id="signupForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" placeholder="Il tuo nome utente" title="Nome utente" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" placeholder="la.tua@email.com" title="Indirizzo email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" placeholder="Password sicura" title="Password di almeno 6 caratteri" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="role">Ruolo</label>
+                        <select id="role" title="Seleziona il tuo ruolo" onchange="toggleVendorFields()">
+                            <option value="ACQUIRENTE">Acquirente</option>
+                            <option value="PRODUTTORE">Produttore</option>
+                            <option value="TRASFORMATORE">Trasformatore</option>
+                            <option value="DISTRIBUTORE">Distributore di Tipicità</option>
+                            <option value="GESTOREPIATTAFORMA">Gestore Piattaforma</option>
+                            <option value="ANIMATOREFILIERA">Animatore Filiera</option>
+                            <option value="CURATORE">Curatore</option>
+                        </select>
+                    </div>
+                    
+                    <div id="vendorFields" style="display: none;">
+                        <div class="form-group">
+                            <label for="ragioneSociale">Ragione Sociale</label>
+                            <input type="text" id="ragioneSociale" placeholder="Nome dell'azienda" title="Ragione sociale dell'azienda">
+                        </div>
+                        <div class="form-group">
+                            <label for="indirizzo">Indirizzo</label>
+                            <input type="text" id="indirizzo" placeholder="Via, numero, città" title="Indirizzo della sede">
+                        </div>
+                        <div class="form-group">
+                            <button type="button" onclick="geolocate()" class="btn-secondary">Trova la mia posizione</button>
+                        </div>
+                        <input type="hidden" id="lat">
+                        <input type="hidden" id="lon">
+                    </div>
+                    
+                    <button type="submit" class="login-btn btn-primary">Registrati</button>
+                </form>
+                
+                <div id="message" class="mt-2"></div>
+                
+                <div class="text-center mt-3">
+                    <p class="text-muted">Hai già un account? <a href="/login">Accedi qui</a></p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+<script>
+    function toggleVendorFields() {
+        const role = document.getElementById('role').value;
+        const vendorFields = document.getElementById('vendorFields');
+        const vendorRoles = ['PRODUTTORE', 'TRASFORMATORE', 'DISTRIBUTORE'];
+        if (vendorRoles.includes(role)) {
+            vendorFields.style.display = 'block';
+            document.getElementById('ragioneSociale').required = true;
+            document.getElementById('indirizzo').required = true;
+        } else {
+            vendorFields.style.display = 'none';
+            document.getElementById('ragioneSociale').required = false;
+            document.getElementById('indirizzo').required = false;
+        }
+    }
+
+    function geolocate() {
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                document.getElementById('lat').value = position.coords.latitude;
+                document.getElementById('lon').value = position.coords.longitude;
+                alert('Posizione trovata!');
+            }, error => {
+                alert('Impossibile ottenere la posizione: ' + error.message);
+            });
+        } else {
+            alert('La geolocalizzazione non è supportata da questo browser.');
+        }
+    }
+
+    document.getElementById('signupForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const messageDiv = document.getElementById('message');
+        const role = document.getElementById('role').value;
+        const vendorRoles = ['PRODUTTORE', 'TRASFORMATORE', 'DISTRIBUTORE'];
+
+        const signupRequest = {
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            role: [document.getElementById('role').value]
+        };
+
+        if (vendorRoles.includes(role)) {
+            signupRequest.ragioneSociale = document.getElementById('ragioneSociale').value;
+            signupRequest.indirizzo = document.getElementById('indirizzo').value;
+            signupRequest.lat = document.getElementById('lat').value;
+            signupRequest.lon = document.getElementById('lon').value;
+        }
+
+        // Mostra messaggio di caricamento
+        ui.showMessage('Registrazione in corso...', 'info');
+
+        fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(signupRequest)
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => { 
+                    try {
+                        const errorData = JSON.parse(text);
+                        throw new Error(errorData.message || text);
+                    } catch (parseError) {
+                        throw new Error(text);
+                    }
+                });
+            }
+            return response.text();
+        })
+        .then(data => {
+            // Gestisce il messaggio di successo
+            let successMessage = data;
+            try {
+                const parsedData = JSON.parse(data);
+                successMessage = parsedData.message || data;
+            } catch (e) {
+                // Se non è JSON, usa il testo così com'è
+            }
+
+            // Messaggio personalizzato per il curatore
+            if (role === 'CURATORE') {
+                successMessage = 'Registrazione completata! Puoi effettuare l\'accesso immediatamente.';
+            } else {
+                if (!successMessage.includes('approvazione')) {
+                    successMessage += ' In attesa di approvazione.';
+                }
+            }
+
+            ui.showMessage(successMessage, 'success');
+            setTimeout(() => window.location.href = '/login', 2500);
+        })
+        .catch(error => {
+            console.error('Errore registrazione:', error);
+            let errorMessage = error.message;
+            
+            // Pulisce il messaggio se è in formato JSON
+            if (errorMessage.includes('{"message":')) {
+                try {
+                    const errorData = JSON.parse(errorMessage);
+                    errorMessage = errorData.message || 'Errore durante la registrazione';
+                } catch (e) {
+                    errorMessage = 'Errore durante la registrazione';
+                }
+            }
+            
+            ui.showMessage(errorMessage, 'error');
+        });
+    });
+</script>
+            
+        </div>
+    </article>
+</main>
+</body>
+</html>

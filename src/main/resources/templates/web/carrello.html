@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Carrello</title>
+  <link rel="stylesheet" href="/css/app.css"/>
+  <script defer src="/js/auth.js"></script>
+  <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+  <nav class="navbar"><div class="container"></div></nav>
+  <main class="container">
+    <div class="breadcrumb"><a href="/articoli">← Continua a comprare</a></div>
+    <h1>Il tuo carrello</h1>
+
+    <div id="message" class="message" style="display:none"></div>
+    <div id="carrelloContainer" class="card"></div>
+
+    <div class="card">
+      <h3>Dati di spedizione</h3>
+      <form id="checkoutForm">
+        <div class="grid-2">
+          <label>Nome<input name="nome" required></label>
+          <label>Cognome<input name="cognome" required></label>
+          <label>Indirizzo<input name="indirizzo" required></label>
+          <label>Numero civico<input name="numeroCivico" required></label>
+          <label>CAP<input name="cap" pattern="[0-9]{5}" required></label>
+          <label>Città<input name="citta" required></label>
+        </div>
+        <h4>Pagamento (simulazione)</h4>
+        <div class="grid-3">
+          <label>Numero carta<input name="numeroCarta" pattern="[0-9]{16}" placeholder="16 cifre" required></label>
+          <label>Scadenza (MM/YY)<input name="scadenzaCarta" pattern="(0[1-9]|1[0-2])\/([0-9]{2})" placeholder="MM/YY" required></label>
+          <label>CVV<input name="cvv" pattern="[0-9]{3}" placeholder="3 cifre" required></label>
+        </div>
+        <button type="submit" class="btn-primary">Acquista</button>
+      </form>
+    </div>
+  </main>
+
+  <script>
+  const state = { acquirenteId: null, carrello: null };
+
+  function renderCarrello() {
+    const c = state.carrello;
+    const el = document.getElementById('carrelloContainer');
+    if (!c || !c.elementi || c.elementi.length === 0) {
+      el.innerHTML = '<p class="text-muted">Il carrello è vuoto.</p>';
+      return;
+    }
+    const rows = c.elementi.map(e => `
+      <div class="row" style="display:flex;gap:12px;align-items:center;justify-content:space-between;border-bottom:1px solid #eee;padding:8px 0;">
+        <div style="flex:1;">${e.articolo.nome}</div>
+        <div>€ ${Number(e.articolo.prezzo).toFixed(2)}</div>
+        <div>
+          <button data-id="${e.articolo.id}" class="qminus">-</button>
+          <span style="margin:0 8px;">${e.quantita}</span>
+          <button data-id="${e.articolo.id}" class="qplus">+</button>
+          <button data-id="${e.articolo.id}" class="remove btn-outline" style="margin-left:8px;">Rimuovi</button>
+        </div>
+      </div>
+    `).join('');
+    el.innerHTML = `
+      <div>${rows}</div>
+      <div style="text-align:right;margin-top:10px;"><strong>Totale:</strong> € ${Number(c.totale||0).toFixed(2)}</div>
+    `;
+
+    el.querySelectorAll('.qplus').forEach(b=>b.addEventListener('click', ()=>changeQty(b.dataset.id, +1)));
+    el.querySelectorAll('.qminus').forEach(b=>b.addEventListener('click', ()=>changeQty(b.dataset.id, -1)));
+    el.querySelectorAll('.remove').forEach(b=>b.addEventListener('click', ()=>removeItem(b.dataset.id)));
+  }
+
+  function changeQty(articoloId, delta) {
+    const item = state.carrello.elementi.find(e=>e.articolo.id==articoloId);
+    if(!item) return;
+    const nuova = item.quantita + delta;
+    if(nuova<=0) return removeItem(articoloId);
+    http.request('PUT', `/api/carrello/${state.acquirenteId}/articoli/quantita`, { body: { articoloId: Number(articoloId), quantita: nuova } })
+      .then(c=>{ state.carrello=c; renderCarrello(); })
+      .catch(err=>ui.showMessage('Errore aggiornando quantità', 'error'));
+  }
+
+  function removeItem(articoloId) {
+    http.request('DELETE', `/api/carrello/${state.acquirenteId}/articoli/${articoloId}`)
+      .then(c=>{ state.carrello=c; renderCarrello(); })
+      .catch(()=>ui.showMessage('Errore rimozione articolo', 'error'));
+  }
+
+  function submitCheckout(e){
+    e.preventDefault();
+    const fd = new FormData(e.target);
+    const payload = Object.fromEntries(fd.entries());
+    http.post(`/api/carrello/${state.acquirenteId}/checkout`, payload)
+      .then(resp=>{
+        ui.showMessage('Acquisto completato!', 'success');
+        setTimeout(()=>{ window.location.href = `/ordini?acquirenteId=${state.acquirenteId}`; }, 800);
+      })
+      .catch(async (err)=>{
+        ui.showMessage('Pagamento fallito o dati non validi', 'error');
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const u = auth.ensure(['ROLE_ACQUIRENTE']);
+    if(!u) return;
+    state.acquirenteId = u.user.id;
+    http.get(`/api/carrello/${state.acquirenteId}`).then(c=>{ state.carrello=c; renderCarrello(); });
+    document.getElementById('checkoutForm').addEventListener('submit', submitCheckout);
+  });
+  </script>
+</body>
+</html>
