@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Dashboard Gestore - AgriShop</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <!-- Dashboard Navigation -->
+    <nav class="dashboard-nav">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="nav-title">Dashboard Gestore</h1>
+                <span class="user-role">Gestore Piattaforma</span>
+            </div>
+        </div>
+    </nav>
+    
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Benvenuto, Gestore della Piattaforma!</h1>
+            <p>Gestisci utenti, approvazioni e il funzionamento generale della piattaforma.</p>
+        </div>
+
+        <div id="message" class="hidden"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number" id="pendingUsersCount">0</span>
+                <span class="stat-label">Utenti in attesa</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="pendingEventsCount">0</span>
+                <span class="stat-label">Eventi in attesa</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>👥 Approvazione Utenti Registrati</h3>
+            <table id="pending-users-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Ruolo</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">Caricamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>📅 Approvazione Eventi</h3>
+            <table id="pending-events-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Data</th>
+                        <th>Luogo</th>
+                        <th>Organizzatore</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">Caricamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        // Funzione di logout
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login';
+        }
+
+        document.addEventListener("DOMContentLoaded", function() {
+            if(window.auth){
+              auth.init();
+              const ok = auth.requireRoles(['ROLE_GESTOREPIATTAFORMA','ROLE_GESTORE']);
+              if(!ok) return; // già reindirizzato
+              loadPendingUsers(auth.getToken());
+                            loadPendingEvents(auth.getToken());
+            }
+        });
+
+        function loadPendingUsers(token) {
+            fetch('/api/admin/users/pending', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Errore nel caricamento utenti');
+                }
+                return response.json();
+            })
+            .then(users => {
+                const tableBody = document.querySelector("#pending-users-table tbody");
+                const countEl = document.getElementById('pendingUsersCount');
+                
+                tableBody.innerHTML = '';
+                countEl.textContent = users.length;
+
+                if (users.length === 0) {
+                    const row = document.createElement('tr');
+                    row.innerHTML = '<td colspan="5" class="text-center text-muted">Nessun utente in attesa di approvazione</td>';
+                    tableBody.appendChild(row);
+                } else {
+                    users.forEach(user => {
+                        const row = document.createElement('tr');
+                        row.setAttribute('data-user-id', user.id);
+                        row.innerHTML = `
+                            <td>${user.id}</td>
+                            <td>${user.username}</td>
+                            <td>${user.email}</td>
+                            <td><span class="badge badge-secondary">${user.tipoUtente || 'N/A'}</span></td>
+                            <td><button onclick="approveUser(${user.id})" class="btn-primary">Approva</button></td>
+                        `;
+                        tableBody.appendChild(row);
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching pending users:', error);
+                ui.showMessage('Errore nel caricamento degli utenti da approvare.', 'error');
+                document.querySelector("#pending-users-table tbody").innerHTML = 
+                    '<tr><td colspan="5" class="text-center message-error">Errore nel caricamento</td></tr>';
+            });
+        }
+
+        function loadPendingEvents(token){
+            fetch('/api/admin/eventi/pending', {
+                method: 'GET',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(r => { if(!r.ok) throw new Error('Errore nel caricamento eventi'); return r.json(); })
+            .then(events => {
+                const tbody = document.querySelector('#pending-events-table tbody');
+                const countEl = document.getElementById('pendingEventsCount');
+                tbody.innerHTML = '';
+                countEl.textContent = events.length;
+                if(!events.length){
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Nessun evento da approvare</td></tr>';
+                    return;
+                }
+                events.forEach(ev => {
+                    const tr = document.createElement('tr');
+                    tr.setAttribute('data-event-id', ev.id);
+                    tr.innerHTML = `
+                        <td>${ev.id}</td>
+                        <td>${ev.nome}</td>
+                        <td>${ev.data || ''}</td>
+                        <td>${ev.luogo || ''}</td>
+                        <td>${ev.organizzatore?.username || ''}</td>
+                        <td>
+                          <button class="btn-primary" onclick="approveEvent(${ev.id})">Approva</button>
+                          <button class="btn-outline" onclick="rejectEvent(${ev.id})">Rifiuta</button>
+                        </td>`;
+                    tbody.appendChild(tr);
+                });
+            })
+            .catch(err => {
+                console.error('Error fetching pending events:', err);
+                ui.showMessage('Errore nel caricamento degli eventi da approvare.', 'error');
+                document.querySelector('#pending-events-table tbody').innerHTML = '<tr><td colspan="6" class="text-center message-error">Errore nel caricamento</td></tr>';
+            });
+        }
+
+        function approveEvent(eventId){
+            const token = auth.getToken();
+            fetch(`/api/admin/eventi/${eventId}/approva`, { method:'POST', headers: { 'Authorization': 'Bearer ' + token }})
+            .then(r => { if(!r.ok) throw new Error('Errore approvazione'); })
+            .then(() => {
+                ui.showMessage('Evento approvato', 'success');
+                const row = document.querySelector(`tr[data-event-id='${eventId}']`);
+                if(row) row.remove();
+                const c = document.getElementById('pendingEventsCount');
+                c.textContent = Math.max(0, (parseInt(c.textContent)||1) - 1);
+            })
+            .catch(() => ui.showMessage('Errore durante approvazione evento', 'error'));
+        }
+
+        function rejectEvent(eventId){
+            const token = auth.getToken();
+            if(!confirm('Confermi il rifiuto (eliminazione) dell\'evento?')) return;
+            fetch(`/api/admin/eventi/${eventId}/rifiuta`, { method:'POST', headers: { 'Authorization': 'Bearer ' + token }})
+            .then(r => { if(!r.ok) throw new Error('Errore rifiuto'); })
+            .then(() => {
+                ui.showMessage('Evento rifiutato', 'success');
+                const row = document.querySelector(`tr[data-event-id='${eventId}']`);
+                if(row) row.remove();
+                const c = document.getElementById('pendingEventsCount');
+                c.textContent = Math.max(0, (parseInt(c.textContent)||1) - 1);
+            })
+            .catch(() => ui.showMessage('Errore durante rifiuto evento', 'error'));
+        }
+
+        function approveUser(userId) {
+            const token = localStorage.getItem("token");
+            if (!token) {
+                ui.showMessage("Sessione scaduta. Effettua nuovamente il login.", 'error');
+                window.location.href = "/login";
+                return;
+            }
+
+            if (confirm(`Sei sicuro di voler approvare l'utente con ID ${userId}?`)) {
+                const button = event.target;
+                button.textContent = 'Approvazione...';
+                button.disabled = true;
+
+                fetch(`/api/admin/users/approve/${userId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        ui.showMessage('Utente approvato con successo!', 'success');
+                        setTimeout(() => ui.hideMessage(), 3000);
+                        const row = document.querySelector(`tr[data-user-id='${userId}']`);
+                        if (row) {
+                            row.remove();
+                        }
+                        const countEl = document.getElementById('pendingUsersCount');
+                        countEl.textContent = parseInt(countEl.textContent) - 1;
+                    } else {
+                        throw new Error('Failed to approve user');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error approving user:', error);
+                    ui.showMessage('Errore durante l\'approvazione dell\'utente.', 'error');
+                    button.textContent = 'Approva';
+                    button.disabled = false;
+                });
+            }
+        }
+    </script>
+
+</body>
+</html>

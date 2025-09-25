@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="it" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard Curatore - AgriShop</title>
+    <link rel="stylesheet" href="/css/app.css">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <script defer src="/js/auth.js"></script>
+    <script defer src="/js/navigation.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="container">
+            <!-- La navigazione verrà generata automaticamente da navigation.js -->
+        </div>
+    </nav>
+
+    <!-- Dashboard Navigation -->
+    <nav class="dashboard-nav">
+        <div class="container">
+            <div class="nav-left">
+                <h1 class="nav-title">Dashboard Curatore</h1>
+                <span class="user-role">Curatore</span>
+            </div>
+        </div>
+    </nav>
+
+    <main class="container">
+        <div class="dashboard-header">
+            <h1>Gestione Approvazioni</h1>
+            <p>Approva prodotti, materie prime e gestisci contenuti editoriali.</p>
+        </div>
+
+        <div id="message" class="hidden"></div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="stat-number" id="pendingProductsCount">0</span>
+                <span class="stat-label">Prodotti in attesa</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="pendingMPCount">0</span>
+                <span class="stat-label">Materie prime in attesa</span>
+            </div>
+            <div class="stat-card">
+                <span class="stat-number" id="pendingPackagesCount">0</span>
+                <span class="stat-label">Pacchetti in attesa</span>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <h3>📦 Prodotti in attesa di approvazione</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Azienda</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingProducts">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card">
+            <h3>🌱 Materie prime in attesa di approvazione</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Azienda</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingMP">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="card mt-4">
+            <h3>📦 Pacchetti in attesa di approvazione</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Nome</th>
+                        <th>Azienda</th>
+                        <th>Azioni</th>
+                    </tr>
+                </thead>
+                <tbody id="pendingPackages">
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">Caricamento...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+<script>
+function logout(){
+  localStorage.removeItem('token');
+  localStorage.removeItem('user');
+    window.location.replace('/login');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+    if(window.auth){
+        auth.init();
+        const ok = auth.requireRoles(['ROLE_CURATORE']);
+        if(!ok) return;
+        loadPending(auth.getToken());
+    }
+});
+
+function loadPending(token){
+    // Prodotti
+    fetch('/api/prodotti/pending', { headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>r.json()).then(items=>{
+            const tb = document.getElementById('pendingProducts');
+            const countEl = document.getElementById('pendingProductsCount');
+            tb.innerHTML='';
+            countEl.textContent = items.length;
+            
+            if(items.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="4" class="text-center text-muted">Nessun prodotto in attesa</td>';
+                tb.appendChild(tr);
+            } else {
+                items.forEach(p=>{
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${p.id}</td><td>${p.nome||''}</td><td>${p.aziendaOrigine? (p.aziendaOrigine.ragioneSociale||p.aziendaOrigine.username):'-'}</td>
+                                    <td><button onclick="approveProduct(${p.id})" class="btn-primary">Approva</button></td>`;
+                    tb.appendChild(tr);
+                });
+            }
+        }).catch(e => {
+            console.error('Errore caricamento prodotti:', e);
+            document.getElementById('pendingProducts').innerHTML = '<tr><td colspan="4" class="text-center message-error">Errore nel caricamento</td></tr>';
+        });
+        
+    // Materie prime
+    fetch('/api/materie-prime/pending', { headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>r.json()).then(items=>{
+            const tb = document.getElementById('pendingMP');
+            const countEl = document.getElementById('pendingMPCount');
+            tb.innerHTML='';
+            countEl.textContent = items.length;
+            
+            if(items.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="4" class="text-center text-muted">Nessuna materia prima in attesa</td>';
+                tb.appendChild(tr);
+            } else {
+                items.forEach(mp=>{
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${mp.id}</td><td>${mp.nome||''}</td><td>${mp.aziendaOrigine? (mp.aziendaOrigine.ragioneSociale||mp.aziendaOrigine.username):'-'}</td>
+                                    <td><button onclick="approveMP(${mp.id})" class="btn-primary">Approva</button></td>`;
+                    tb.appendChild(tr);
+                });
+            }
+        }).catch(e => {
+            console.error('Errore caricamento materie prime:', e);
+            document.getElementById('pendingMP').innerHTML = '<tr><td colspan="4" class="text-center message-error">Errore nel caricamento</td></tr>';
+        });
+
+    // Pacchetti
+    fetch('/api/pacchetti/pending', { headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>r.json()).then(items=>{
+            const tb = document.getElementById('pendingPackages');
+            const countEl = document.getElementById('pendingPackagesCount');
+            tb.innerHTML='';
+            countEl.textContent = items.length;
+            if(items.length === 0) {
+                const tr = document.createElement('tr');
+                tr.innerHTML = '<td colspan="4" class="text-center text-muted">Nessun pacchetto in attesa</td>';
+                tb.appendChild(tr);
+            } else {
+                items.forEach(pac=>{
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `<td>${pac.id}</td><td>${pac.nome||''}</td><td>${pac.aziendaOrigine? (pac.aziendaOrigine.ragioneSociale||pac.aziendaOrigine.username):'-'}</td>
+                                    <td><button onclick="approvePackage(${pac.id})" class="btn-primary">Approva</button></td>`;
+                    tb.appendChild(tr);
+                });
+            }
+        }).catch(e => {
+            console.error('Errore caricamento pacchetti:', e);
+            document.getElementById('pendingPackages').innerHTML = '<tr><td colspan="4" class="text-center message-error">Errore nel caricamento</td></tr>';
+        });
+}
+
+function approveProduct(id){
+    const token = localStorage.getItem('token');
+    const button = event.target;
+    button.textContent = 'Approvazione...';
+    button.disabled = true;
+    
+    fetch(`/api/prodotti/${id}/approve`, { method:'POST', headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>{ 
+            if(!r.ok) throw new Error('Errore approvazione prodotto'); 
+            ui.showMessage('Prodotto approvato con successo!', 'success');
+            setTimeout(() => ui.hideMessage(), 3000);
+            loadPending(token); 
+        })
+        .catch(e=>{
+            console.error('Errore approvazione:', e);
+            ui.showMessage('Errore nell\'approvazione: ' + e.message, 'error');
+            button.textContent = 'Approva';
+            button.disabled = false;
+        });
+}
+
+function approveMP(id){
+    const token = localStorage.getItem('token');
+    const button = event.target;
+    button.textContent = 'Approvazione...';
+    button.disabled = true;
+    
+    fetch(`/api/materie-prime/${id}/approve`, { method:'POST', headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>{ 
+            if(!r.ok) throw new Error('Errore approvazione materia prima'); 
+            ui.showMessage('Materia prima approvata con successo!', 'success');
+            setTimeout(() => ui.hideMessage(), 3000);
+            loadPending(token); 
+        })
+        .catch(e=>{
+            console.error('Errore approvazione:', e);
+            ui.showMessage('Errore nell\'approvazione: ' + e.message, 'error');
+            button.textContent = 'Approva';
+            button.disabled = false;
+        });
+}
+
+function approvePackage(id){
+    const token = localStorage.getItem('token');
+    const button = event.target;
+    button.textContent = 'Approvazione...';
+    button.disabled = true;
+    fetch(`/api/pacchetti/${id}/approve`, { method:'POST', headers:{ 'Authorization':'Bearer '+token }})
+        .then(r=>{ 
+            if(!r.ok) throw new Error('Errore approvazione pacchetto'); 
+            ui.showMessage('Pacchetto approvato con successo!', 'success');
+            setTimeout(() => ui.hideMessage(), 3000);
+            loadPending(token); 
+        })
+        .catch(e=>{
+            console.error('Errore approvazione:', e);
+            ui.showMessage('Errore nell\'approvazione: ' + e.message, 'error');
+            button.textContent = 'Approva';
+            button.disabled = false;
+        });
+}
+</script>
+
+</body>
+</html>
