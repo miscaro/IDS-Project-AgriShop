@@ -4,15 +4,15 @@ Applicazione web Spring Boot per un marketplace agroalimentare con catalogo (pro
 
 ## Avvio (Windows PowerShell)
 
+Build:
+
 ```powershell
-.\u200cgradlew.bat bootRun
+.\gradlew.bat build
 ```
 
-Oppure build + jar:
-
+Avvio:
 ```powershell
-.\u200cgradlew.bat build
-java -jar .\build\libs\ProgettoIDS-0.0.1-SNAPSHOT.jar
+.\gradlew.bat bootRun
 ```
 
 Apri: http://localhost:8080
