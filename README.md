@@ -17,6 +17,17 @@ Avvio:
 
 Apri: http://localhost:8080
 
+## Compatibilità Java e Gradle
+
+Il progetto richiede **Java 17** (impostato nel file `build.gradle`) e utilizza il **wrapper Gradle** (`gradlew`/`gradlew.bat`), che scarica automaticamente la versione corretta di Gradle (8.14.3).
+
+**Se hai Java superiore alla 17** (es. Java 18, 19, 21, ecc.):
+- Puoi comunque avviare il progetto, ma è consigliato installare anche Java 17 (puoi usare [SDKMAN!](https://sdkman.io/) o [Adoptium](https://adoptium.net/) per gestire più versioni).
+- Il wrapper Gradle proverà a usare Java 17 se presente; se hai solo versioni superiori, potresti ricevere errori di compatibilità.
+- In caso di problemi, installa Java 17 e imposta la variabile d'ambiente `JAVA_HOME` su quella versione.
+
+**Non serve installare Gradle manualmente:** usa sempre i comandi con `gradlew`/`gradlew.bat` come indicato sotto.
+
 ## Utenti di prova (seed)
 
 - gestore / gestore (Gestore Piattaforma)
